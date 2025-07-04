@@ -1,8 +1,11 @@
 #!/bin/bash
 set -e
 
+DIR=$(readlink -f .)
+MAIN=$(readlink -f ${DIR}/..)
+
 TARGET_DEVICE="pearl"
-TOOLCHAIN_PATH=$HOME/toolchain/proton-clang/bin
+TOOLCHAIN_PATH=$MAIN/toolchain/proton-clang/bin
 
 if [ ! -d $TOOLCHAIN_PATH ]; then
     echo "TOOLCHAIN_PATH [$TOOLCHAIN_PATH] does not exist."
