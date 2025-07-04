@@ -1,0 +1,56 @@
+name: Build Kernel - Release
+
+on:
+  push:
+    branches: [ "pearl-s-oss" ]
+  pull_request:
+    branches: [ "pearl-s-oss" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      TIME: ${{ steps.set-time.outputs.TIME }}
+    steps:
+      - name: Get current time
+        id: set-time
+        run: echo "TIME=$(date +'%Y%m%d')" >> $GITHUB_ENV && echo "TIME=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+      - name: Free disk space
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq curl
+          curl -fsSL https://raw.githubusercontent.com/kou/arrow/e49d8ae15583ceff03237571569099a6ad62be32/ci/scripts/util_free_space.sh | bash
+      - name: Checkout Code
+        uses: actions/checkout@v4.2.2
+        with:
+          submodules: "true"
+          fetch-depth: 1
+      - name: Set Swap Space
+        uses: pierotofy/set-swap-space@v1.0
+        with:
+          swap-size-gb: 8
+      - name: Setup build environment
+        run: |
+          # Install require dependencies
+          sudo apt update -y
+          sudo apt install bc binutils-dev bison build-essential ccache curl flex git libelf-dev lld make python3-dev cpio python-is-python3 tar perl wget lz4 unzip -y
+          git clone https://github.com/bachnxuan/AnyKernel3.git AnyKernel3
+          cd AnyKernel3 && rm -rf .git .github && cd ..
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          max-size: 7.5G
+      - name: Download toolchain
+        working-directory: ./..
+        run: |
+          AOSP_MIRROR=https://android.googlesource.com
+          BRANCH=main-kernel-build-2024
+          git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth 1 kernel-build-tools
+          git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth 1 mkbootimg
+          mkdir clang-tc && cd clang-tc
+          wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-12.0.0_r12/clang-r416183b1.tar.gz
+          tar -xvzf clang-r416183b1.tar.gz
+          rm -rf clang-r416183b1.tar.gz
+      - name: Build
+        run: |
+          bash build.sh
