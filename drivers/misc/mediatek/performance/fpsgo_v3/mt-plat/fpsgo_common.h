@@ -10,6 +10,8 @@
 #include <linux/ktime.h>
 #include <linux/fs.h>
 
+#define CONFIG_MTK_FPSGO_V3 1
+
 struct fps_level {
 	int start;
 	int end;
