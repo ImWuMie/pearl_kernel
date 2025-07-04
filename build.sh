@@ -20,7 +20,7 @@ export CROSS_COMPILE="aarch64-linux-gnu-"
 
 # Config
 THREAD="-j$(nproc --all)"
-DEFCONFIG="mikrn_pearl_defconfig"
+DEFCONFIG="pearl_defconfig"
 export ARCH=arm64
 export SUBARCH=$ARCH
 export KBUILD_BUILD_USER=nobody
