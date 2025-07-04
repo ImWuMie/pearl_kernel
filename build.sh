@@ -1,31 +1,67 @@
 #!/bin/bash
-set -euo pipefail
+set -e
 
-# Path variables
-DIR=$(readlink -f .)
-MAIN=$(readlink -f ${DIR}/..)
+TARGET_DEVICE=pearl
+TOOLCHAIN_PATH=$HOME/toolchain/proton-clang/bin
 
-# Set up ccache if not running in GitHub Actions
-if [ -z "${GITHUB_ACTIONS-}" ]; then
-    mkdir -p "$(pwd)/.ccache"
-    export CCACHE_DIR="$(pwd)/.ccache"
+if [ ! -d $TOOLCHAIN_PATH ]; then
+    echo "TOOLCHAIN_PATH [$TOOLCHAIN_PATH] does not exist."
+    echo "Please ensure the toolchain is there, or change TOOLCHAIN_PATH in the script to your toolchain path."
+    exit 1
 fi
-export USE_CCACHE=1
 
-# Setup Clang
-export CLANG_PATH=$MAIN/clang-tc/bin/
-export PATH=${CLANG_PATH}:${PATH}
-export CLANG_TRIPLE="aarch64-linux-gnu-"
-export CROSS_COMPILE="aarch64-linux-gnu-"
+echo "TOOLCHAIN_PATH: [$TOOLCHAIN_PATH]"
+export PATH="$TOOLCHAIN_PATH:$PATH"
 
-# Config
+if ! command -v aarch64-linux-gnu-ld >/dev/null 2>&1; then
+    echo "[aarch64-linux-gnu-ld] does not exist, please check your environment."
+    exit 1
+fi
+
+if ! command -v arm-linux-gnueabi-ld >/dev/null 2>&1; then
+    echo "[arm-linux-gnueabi-ld] does not exist, please check your environment."
+    exit 1
+fi
+
+if ! command -v clang >/dev/null 2>&1; then
+    echo "[clang] does not exist, please check your environment."
+    exit 1
+fi
+
+
+
+# Enable ccache for speed up compiling 
+export CCACHE_DIR="$HOME/.cache/ccache_mikernel" 
+export CC="ccache gcc"
+export CXX="ccache g++"
+export PATH="/usr/lib/ccache:$PATH"
+echo "CCACHE_DIR: [$CCACHE_DIR]"
+
 THREAD="-j$(nproc --all)"
-DEFCONFIG="pearl_defconfig"
-export ARCH=arm64
-export SUBARCH=$ARCH
-export KBUILD_BUILD_USER=nobody
-LLVM_CONFIG="LLVM=1 LLVM_IAS=1 AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip"
+MAKE_ARGS=" ${THREAD} ARCH=arm64 SUBARCH=arm64 O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu-"
 
-# Build
-make ${THREAD} CC="ccache clang" CXX="ccache clang++" ${LLVM_CONFIG} ${DEFCONFIG} O=out
-make ${THREAD} CC="ccache clang" CXX="ccache clang++" ${LLVM_CONFIG} CONFIG_LTO_CLANG_THIN=y CONFIG_LTO_CLANG_FULL=n O=out 2>&1 | tee kernel.log
+
+if [ "$1" == "j1" ]; then
+    make $MAKE_ARGS -j1
+    exit
+fi
+
+if [ "$1" == "continue" ]; then
+    make $MAKE_ARGS -j$(nproc)
+    exit
+fi
+
+if [ ! -f "arch/arm64/configs/${TARGET_DEVICE}_defconfig" ]; then
+    echo "No target device [${TARGET_DEVICE}] found."
+    echo "Avaliable defconfigs, please choose one target from below down:"
+    ls arch/arm64/configs/*_defconfig
+    exit 1
+fi
+
+
+# Check clang is existing.
+echo "[clang --version]:"
+clang --version
+
+make $MAKE_ARGS ${TARGET_DEVICE}_defconfig
+  make $MAKE_ARGS -j$(nproc)
