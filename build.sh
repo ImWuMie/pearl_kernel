@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-TARGET_DEVICE=pearl
+TARGET_DEVICE="pearl"
 TOOLCHAIN_PATH=$HOME/toolchain/proton-clang/bin
 
 if [ ! -d $TOOLCHAIN_PATH ]; then
@@ -64,4 +64,4 @@ echo "[clang --version]:"
 clang --version
 
 make $MAKE_ARGS ${TARGET_DEVICE}_defconfig
-  make $MAKE_ARGS -j$(nproc)
+make $MAKE_ARGS -j$(nproc)
