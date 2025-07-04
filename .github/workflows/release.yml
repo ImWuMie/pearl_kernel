@@ -45,6 +45,7 @@ jobs:
 
       - name: Download Proton Clang Toolchain
         if: steps.clang-cache.outputs.cache-hit != 'true'
+        working-directory: ./..
         run: |
           mkdir -p toolchain; cd toolchain
           wget https://github.com/kdrag0n/proton-clang/archive/refs/tags/20210522.zip
