@@ -40,7 +40,7 @@
 #include <net/net_namespace.h>
 #include <linux/netlink.h>
 
-#if IS_ENABLED(CONFIG_SCSI_UFS_MEDIATEK)
+// #if IS_ENABLED(CONFIG_SCSI_UFS_MEDIATEK)
 #include "ufs-mediatek.h"
 #endif
 
@@ -53,7 +53,7 @@
 #include "rpmb-mtk.h"
 
 static struct mmc_host *mtk_mmc_host[] = {NULL};
-#endif
+// #endif
 
 /* #define __RPMB_MTK_DEBUG_MSG */
 /* #define __RPMB_MTK_DEBUG_HMAC_VERIFY */
